@@ -51,6 +51,10 @@
   .base-info{margin-top:8px; font-size:12px; font-weight:bold; color:var(--mag);}
   .bt-fx-envia{font:inherit; font-size:11px; font-weight:bold; margin-left:8px; padding:2px 10px; border:2px solid var(--mag); background:#fff; color:var(--mag); cursor:pointer;}
   .bt-fx-envia:hover{background:var(--mag); color:#fff;}
+  .reun{display:inline-block; font-size:8px; font-weight:bold; letter-spacing:.5px; padding:0 3px; margin:2px 2px 0 0; border:1px solid var(--ink); color:var(--ink);}
+  .reun.dec{background:var(--ink); color:#fff;}
+  .grade td.hoje .reun{border-color:#fff; color:#fff;}
+  .grade td.hoje .reun.dec{background:#fff; color:var(--mag);}
   .fer-mes{margin-top:10px; border-top:2px solid var(--ink); padding-top:6px; font-size:12px;}
   .fer-mes b{color:var(--mag);}
   .legenda{font-size:11px; color:var(--gray); margin-top:8px;}
@@ -95,7 +99,7 @@
       </table>
       <div class="base-info" id="base-info"></div>
       <div class="fer-mes" id="fer-mes"></div>
-      <div class="legenda"><b style="color:var(--ink)">d.u.</b> = dias úteis (BR) · <b style="color:var(--mag)">d.c.</b> = dias corridos · terracota = feriado bancário · <b>clique num dia para contar a partir dele</b></div>
+      <div class="legenda"><b style="color:var(--ink)">d.u.</b> = dias úteis (BR) · <b style="color:var(--mag)">d.c.</b> = dias corridos · terracota = feriado bancário · tarja COPOM/FOMC cheia = dia da decisão · <b>clique num dia para contar a partir dele</b></div>
     </div>
   </div>
 </div>
@@ -267,6 +271,23 @@ const FERIADOS = [
 ];
 const FMAP = {}; FERIADOS.forEach(f => FMAP[f.date] = f);
 
+// ===== Reuniões de política monetária 2026 — decisão da taxa no 2º dia =====
+// Copom: bcb.gov.br · FOMC: federalreserve.gov (2027 ainda não divulgado)
+const REUNIOES = [
+["COPOM","2026-01-27","2026-01-28"],["FOMC","2026-01-27","2026-01-28"],
+["COPOM","2026-03-17","2026-03-18"],["FOMC","2026-03-17","2026-03-18"],
+["COPOM","2026-04-28","2026-04-29"],["FOMC","2026-04-28","2026-04-29"],
+["COPOM","2026-06-16","2026-06-17"],["FOMC","2026-06-16","2026-06-17"],
+["FOMC","2026-07-28","2026-07-29"],
+["COPOM","2026-08-04","2026-08-05"],
+["COPOM","2026-09-15","2026-09-16"],["FOMC","2026-09-15","2026-09-16"],
+["FOMC","2026-10-27","2026-10-28"],
+["COPOM","2026-11-03","2026-11-04"],
+["COPOM","2026-12-08","2026-12-09"],["FOMC","2026-12-08","2026-12-09"]
+];
+const RMAP = {};
+REUNIOES.forEach(([t,d1,d2])=>{ (RMAP[d1]=RMAP[d1]||[]).push({t,dec:false}); (RMAP[d2]=RMAP[d2]||[]).push({t,dec:true}); });
+
 // ===== utilidades de data =====
 const SEM = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 const SEM3 = ["DOM","SEG","TER","QUA","QUI","SEX","SÁB"];
@@ -349,7 +370,8 @@ function montaMes(){
       antes ? '' :
       '<div class="cont"><span class="du">'+duEntre(baseD,d)+'</span> <span class="dc">'+dcEntre(baseD,d)+'</span></div>';
     const mkt = ehFer ? '<div class="mkt">'+f.mkt.filter(mk=>MERCADOS.includes(mk)).join("·")+'</div>' : "";
-    linha[w-1] = '<td class="'+cls+'" onclick="setBase('+d.getTime()+')"><div class="dnum">'+dia+'</div>'+cont+mkt+'</td>';
+    const reun = (RMAP[iso(d)]||[]).map(r=>'<div class="reun'+(r.dec?' dec':'')+'">'+r.t+'</div>').join('');
+    linha[w-1] = '<td class="'+cls+'" onclick="setBase('+d.getTime()+')"><div class="dnum">'+dia+'</div>'+cont+mkt+reun+'</td>';
     temAlgo=true;
   }
   fecha();
@@ -360,9 +382,19 @@ function montaMes(){
     '<button class="bt-fx-envia" onclick="enviaParaFx()">Usar como Data Liq. na Cotação FX →</button>';
 
   // feriados do mês (inclui os de fim de semana)
-  document.getElementById("fer-mes").innerHTML = feriadosMes.length ?
+  let listas = feriadosMes.length ?
     feriadosMes.map(x=>'<b>'+String(x.d.getDate()).padStart(2,"0")+' '+SEM3[x.d.getDay()]+'</b> ('+x.mks.join("·")+') — '+x.f.name).join("<br>") :
     "Sem feriados bancários (BR·US·UK·ES) neste mês.";
+
+  // reuniões de juros do mês
+  const reunMes = {};
+  REUNIOES.forEach(([t,d1,d2])=>{ const a=d1.split("-").map(Number); if(a[0]===y && a[1]-1===m){ const k=d1+"|"+d2; (reunMes[k]=reunMes[k]||[]).push(t); } });
+  const linhasReun = Object.keys(reunMes).sort().map(k=>{
+    const [d1,d2]=k.split("|");
+    return '<b>'+d1.slice(8)+'–'+d2.slice(8)+'</b> — '+reunMes[k].join(' e ')+' (decisão dia '+parseInt(d2.slice(8))+')';
+  });
+  if(linhasReun.length) listas += '<br>'+linhasReun.join("<br>");
+  document.getElementById("fer-mes").innerHTML = listas;
 }
 
 // ===== ABA 2: cotação FX (conceitos da planilha) =====
