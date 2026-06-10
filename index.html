@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redoma Financeira</title>
+<style>
+  :root{
+    --mag:#c1532f; --mag-dark:#9a3f22; --ink:#1a1a1a; --gray:#888;
+    --bg:#fdfdfd; --line:#222; --soft:#f2f2f2; --yellow:#fff3b0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Arial Narrow", "Segoe UI", Arial, sans-serif; background:var(--bg); color:var(--ink); padding:14px;}
+  h1{font-size:18px; letter-spacing:2px; text-transform:uppercase;}
+  .topo{display:flex; align-items:baseline; gap:14px; border-bottom:3px solid var(--ink); padding-bottom:8px; margin-bottom:12px;}
+  .topo small{color:var(--gray);}
+  nav{display:flex; gap:6px; margin-bottom:14px;}
+  nav button{font:inherit; font-weight:bold; padding:6px 16px; border:2px solid var(--ink); background:#fff; cursor:pointer; text-transform:uppercase; letter-spacing:1px;}
+  nav button.on{background:var(--ink); color:#fff;}
+  .aba{display:none;} .aba.on{display:block;}
+
+  /* ===== FOLHINHA ===== */
+  .folhinha{display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start;}
+  .dia-grande{border:3px solid var(--ink); padding:18px 26px; text-align:center; min-width:230px;}
+  .dia-grande .num{font-size:110px; font-weight:bold; color:var(--mag); line-height:1;}
+  .dia-grande .sem{font-size:34px; font-weight:bold; color:var(--mag); letter-spacing:4px;}
+  .dia-grande .frac{font-size:20px; font-weight:bold; color:var(--mag); margin-top:4px;}
+  .dia-grande .mesano{font-size:15px; font-weight:bold; text-transform:uppercase; letter-spacing:3px; border-top:2px solid var(--ink); margin-top:10px; padding-top:8px;}
+  .dia-grande .du-ano{font-size:12px; color:var(--gray); margin-top:6px;}
+  table{border-collapse:collapse; width:100%;}
+  .mes-tab{min-width:380px; max-width:520px;}
+  .mes-tab h2{background:var(--ink); color:#fff; text-align:center; font-size:18px; letter-spacing:4px; padding:6px; border:2px solid var(--ink); display:flex; justify-content:space-between; align-items:center;}
+  .nav-mes{background:none; border:none; color:#fff; font-size:16px; cursor:pointer; padding:0 10px; line-height:1;}
+  .nav-mes:disabled{opacity:.2; cursor:default;}
+  .grade{border:2px solid var(--ink);}
+  .grade th{border:1px solid var(--ink); font-size:13px; font-weight:bold; padding:4px; background:#fff; letter-spacing:1px;}
+  .grade td{border:1px solid var(--ink); width:20%; height:58px; vertical-align:top; padding:3px 5px;}
+  .grade .dnum{font-size:22px; font-weight:bold; line-height:1;}
+  .grade .cont{font-size:11px; font-weight:bold; margin-top:3px;}
+  .grade .cont .du{color:var(--ink);}
+  .grade .cont .dc{color:var(--mag);}
+  .grade .mkt{font-size:9px; font-weight:bold; color:var(--mag); letter-spacing:1px; margin-top:2px;}
+  .grade td.fer{background:#f7e3da;}
+  .grade td.fer .dnum{color:var(--mag);}
+  .grade td.passado .dnum, .grade td.passado .cont{color:#bbb;}
+  .grade td.hoje{background:var(--mag);}
+  .grade td.hoje .dnum, .grade td.hoje .cont, .grade td.hoje .mkt{color:#fff;}
+  .grade td[onclick]{cursor:pointer;}
+  .grade td[onclick]:hover{box-shadow:inset 0 0 0 2px var(--mag);}
+  .grade td.hojeb{box-shadow:inset 0 0 0 2px var(--mag);}
+  .base-info{margin-top:8px; font-size:12px; font-weight:bold; color:var(--mag);}
+  .bt-fx-envia{font:inherit; font-size:11px; font-weight:bold; margin-left:8px; padding:2px 10px; border:2px solid var(--mag); background:#fff; color:var(--mag); cursor:pointer;}
+  .bt-fx-envia:hover{background:var(--mag); color:#fff;}
+  .fer-mes{margin-top:10px; border-top:2px solid var(--ink); padding-top:6px; font-size:12px;}
+  .fer-mes b{color:var(--mag);}
+  .legenda{font-size:11px; color:var(--gray); margin-top:8px;}
+
+  /* ===== FX ===== */
+  .params{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
+  .par{border:2px solid var(--ink); padding:8px 14px; min-width:150px;}
+  .par label{display:block; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--gray);}
+  .par input{font:inherit; font-size:22px; font-weight:bold; color:#0000cc; border:none; width:110px; background:transparent; outline:none;}
+  .fx-tab th{border:1px solid var(--ink); font-size:11px; padding:4px; background:var(--soft); text-transform:uppercase;}
+  .fx-tab td{border:1px solid var(--ink); font-size:14px; padding:3px 6px; text-align:center;}
+  .fx-tab input{font:inherit; font-size:14px; border:none; background:transparent; width:100%; text-align:center; outline:none; color:#0000cc; font-weight:bold;}
+  .fx-tab input[type=date]{width:130px; font-size:12px;}
+  .fx-tab .calc{font-weight:bold;}
+  .fx-tab .precisa{background:var(--yellow);}
+  .fx-tab tr.spotrow td{background:var(--soft); font-weight:bold;}
+  .formula{font-size:12px; color:var(--gray); margin-top:10px; line-height:1.6;}
+  .neg{color:#c00;} .pos{color:#070;}
+</style>
+</head>
+<body>
+
+<div class="topo">
+  <h1>Redoma Financeira</h1>
+  <small id="hoje-label"></small>
+</div>
+
+<nav>
+  <button id="bt-cal" class="on" onclick="aba('cal')">Calendário</button>
+  <button id="bt-fx" onclick="aba('fx')">Cotação FX</button>
+</nav>
+
+<!-- ============ ABA CALENDÁRIO ============ -->
+<div id="aba-cal" class="aba on">
+  <div class="folhinha">
+    <div class="dia-grande" id="dia-grande"></div>
+    <div class="mes-tab">
+      <h2 class="mes-nav"><button class="nav-mes" id="bt-prev" onclick="mudaMes(-1)">◀</button><span id="mes-titulo"></span><button class="nav-mes" id="bt-next" onclick="mudaMes(1)">▶</button></h2>
+      <table class="grade">
+        <thead><tr><th>SEG</th><th>TER</th><th>QUA</th><th>QUI</th><th>SEX</th></tr></thead>
+        <tbody id="mes-corpo"></tbody>
+      </table>
+      <div class="base-info" id="base-info"></div>
+      <div class="fer-mes" id="fer-mes"></div>
+      <div class="legenda"><b style="color:var(--ink)">d.u.</b> = dias úteis (BR) · <b style="color:var(--mag)">d.c.</b> = dias corridos · terracota = feriado bancário · <b>clique num dia para contar a partir dele</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ABA COTAÇÃO FX ============ -->
+<div id="aba-fx" class="aba">
+  <div class="params">
+    <div class="par"><label>Spot USD/BRL (D+2 ref.)</label><input id="p-spot" type="number" step="0.0001" value="5.20"></div>
+    <div class="par"><label>CDI / Pré-fixado % a.a.</label><input id="p-cdi" type="number" step="0.01" value="14.40"></div>
+    <div class="par"><label>Linha USD % a.a.</label><input id="p-linha" type="number" step="0.01" value="3.58"></div>
+  </div>
+  <table class="fx-tab">
+    <thead><tr>
+      <th>Descrição</th><th>Data Liq.</th><th>DU</th><th>DC</th><th>Linha/Cupom<br>% a.a.</th>
+      <th>Taxa Justa</th><th>Spread<br>(pips)</th><th>Taxa<br>Cliente</th><th>Δ pips<br>vs SPOT</th><th>Δ %<br>vs SPOT</th>
+    </tr></thead>
+    <tbody id="fx-corpo"></tbody>
+  </table>
+  <div class="formula">
+    <b>Fórmula:</b> Taxa Justa = SPOT × (1+CDI)^((DU−2)/252) ÷ (1+Linha×(DC−2)/360) &nbsp;·&nbsp; DU=2 e DC=2 → Taxa = SPOT<br>
+    Escolher a <b>Data Liq.</b> preenche DU/DC automaticamente (DU = dias úteis BR; DC = corridos), mas ambos podem ser editados à mão.<br>
+    Para prazos > 7 DU, digitar a taxa de <b>cupom cambial de mercado</b> na coluna Linha/Cupom (célula fica amarela enquanto usa o parâmetro global).<br>
+    Spread em pips: 50 pips = 0,0050 &nbsp;·&nbsp; Taxa Cliente = Taxa Justa + Spread/10.000 &nbsp;·&nbsp; <span style="color:#0000cc">azul = editável</span>
+  </div>
+</div>
+
+<script>
+// ===== Calendário de feriados bancários 2025-2027 (extraído de Cotacao_FX_USD_BRL.xlsx) =====
+const FERIADOS = [
+{date:"2025-01-01",mkt:["BR","US","JP","UK","ES"],name:"Confraternização Universal · New Year's Day · Ganjitsu · Año Nuevo"},
+{date:"2025-01-06",mkt:["ES"],name:"Reyes Magos"},
+{date:"2025-01-13",mkt:["JP"],name:"Seijin-no-Hi"},
+{date:"2025-01-20",mkt:["US"],name:"MLK Day"},
+{date:"2025-02-11",mkt:["JP"],name:"Kenkoku Kinen-no-Hi"},
+{date:"2025-02-17",mkt:["US"],name:"Presidents' Day"},
+{date:"2025-02-23",mkt:["JP"],name:"Tennō Tanjōbi"},
+{date:"2025-03-03",mkt:["BR"],name:"Carnaval (2ª-feira)"},
+{date:"2025-03-04",mkt:["BR"],name:"Carnaval (3ª-feira)"},
+{date:"2025-03-20",mkt:["JP"],name:"Shunbun-no-Hi"},
+{date:"2025-04-17",mkt:["ES"],name:"Jueves Santo"},
+{date:"2025-04-18",mkt:["BR","UK","ES"],name:"Sexta-Feira Santa · Good Friday · Viernes Santo"},
+{date:"2025-04-21",mkt:["BR","UK"],name:"Tiradentes · Easter Monday"},
+{date:"2025-04-29",mkt:["JP"],name:"Shōwa-no-Hi"},
+{date:"2025-05-01",mkt:["BR","ES"],name:"Dia do Trabalho · Fiesta del Trabajo"},
+{date:"2025-05-02",mkt:["ES"],name:"Día Comunidad de Madrid"},
+{date:"2025-05-03",mkt:["JP"],name:"Kenpō Kinenbi"},
+{date:"2025-05-04",mkt:["JP"],name:"Midori-no-Hi"},
+{date:"2025-05-05",mkt:["JP","UK"],name:"Kodomo-no-Hi · Early May Bank Holiday"},
+{date:"2025-05-26",mkt:["US","UK"],name:"Memorial Day · Spring Bank Holiday"},
+{date:"2025-06-19",mkt:["BR","US"],name:"Corpus Christi · Juneteenth"},
+{date:"2025-07-04",mkt:["US"],name:"Independence Day"},
+{date:"2025-07-21",mkt:["JP"],name:"Umi-no-Hi"},
+{date:"2025-07-25",mkt:["ES"],name:"Santiago Apóstol"},
+{date:"2025-08-11",mkt:["JP"],name:"Yama-no-Hi"},
+{date:"2025-08-15",mkt:["ES"],name:"Asunción de la Virgen"},
+{date:"2025-08-25",mkt:["UK"],name:"Summer Bank Holiday"},
+{date:"2025-09-01",mkt:["US"],name:"Labor Day"},
+{date:"2025-09-07",mkt:["BR"],name:"Independência"},
+{date:"2025-09-15",mkt:["JP"],name:"Keirō-no-Hi"},
+{date:"2025-09-23",mkt:["JP"],name:"Shūbun-no-Hi"},
+{date:"2025-10-12",mkt:["BR","ES"],name:"N. Sra. Aparecida · Fiesta Nacional"},
+{date:"2025-10-13",mkt:["US","JP"],name:"Columbus Day · Supōtsu-no-Hi"},
+{date:"2025-11-01",mkt:["ES"],name:"Todos los Santos"},
+{date:"2025-11-02",mkt:["BR"],name:"Finados"},
+{date:"2025-11-03",mkt:["JP"],name:"Bunka-no-Hi"},
+{date:"2025-11-09",mkt:["ES"],name:"Almudena"},
+{date:"2025-11-11",mkt:["US"],name:"Veterans Day"},
+{date:"2025-11-15",mkt:["BR"],name:"Proclamação da República"},
+{date:"2025-11-20",mkt:["BR"],name:"Consciência Negra"},
+{date:"2025-11-23",mkt:["JP"],name:"Kinrō Kansha-no-Hi"},
+{date:"2025-11-27",mkt:["US"],name:"Thanksgiving"},
+{date:"2025-12-06",mkt:["ES"],name:"Día de la Constitución"},
+{date:"2025-12-08",mkt:["ES"],name:"Inmaculada Concepción"},
+{date:"2025-12-25",mkt:["BR","US","UK","ES"],name:"Natal · Christmas Day · Navidad"},
+{date:"2025-12-26",mkt:["UK"],name:"Boxing Day"},
+{date:"2026-01-01",mkt:["BR","US","JP","UK","ES"],name:"Confraternização Universal · New Year's Day · Ganjitsu · Año Nuevo"},
+{date:"2026-01-06",mkt:["ES"],name:"Reyes Magos"},
+{date:"2026-01-12",mkt:["JP"],name:"Seijin-no-Hi"},
+{date:"2026-01-19",mkt:["US"],name:"MLK Day"},
+{date:"2026-02-11",mkt:["JP"],name:"Kenkoku Kinen-no-Hi"},
+{date:"2026-02-16",mkt:["BR","US"],name:"Carnaval (2ª-feira) · Presidents' Day"},
+{date:"2026-02-17",mkt:["BR"],name:"Carnaval (3ª-feira)"},
+{date:"2026-02-23",mkt:["JP"],name:"Tennō Tanjōbi"},
+{date:"2026-03-20",mkt:["JP"],name:"Shunbun-no-Hi"},
+{date:"2026-04-02",mkt:["ES"],name:"Jueves Santo"},
+{date:"2026-04-03",mkt:["BR","UK","ES"],name:"Sexta-Feira Santa · Good Friday · Viernes Santo"},
+{date:"2026-04-06",mkt:["UK"],name:"Easter Monday"},
+{date:"2026-04-21",mkt:["BR"],name:"Tiradentes"},
+{date:"2026-04-29",mkt:["JP"],name:"Shōwa-no-Hi"},
+{date:"2026-05-01",mkt:["BR","ES"],name:"Dia do Trabalho · Fiesta del Trabajo"},
+{date:"2026-05-02",mkt:["ES"],name:"Día Comunidad de Madrid"},
+{date:"2026-05-03",mkt:["JP"],name:"Kenpō Kinenbi"},
+{date:"2026-05-04",mkt:["JP","UK"],name:"Midori-no-Hi · Early May Bank Holiday"},
+{date:"2026-05-05",mkt:["JP"],name:"Kodomo-no-Hi"},
+{date:"2026-05-25",mkt:["US","UK"],name:"Memorial Day · Spring Bank Holiday"},
+{date:"2026-06-04",mkt:["BR"],name:"Corpus Christi"},
+{date:"2026-06-19",mkt:["US"],name:"Juneteenth"},
+{date:"2026-07-04",mkt:["US"],name:"Independence Day"},
+{date:"2026-07-20",mkt:["JP"],name:"Umi-no-Hi"},
+{date:"2026-07-25",mkt:["ES"],name:"Santiago Apóstol"},
+{date:"2026-08-11",mkt:["JP"],name:"Yama-no-Hi"},
+{date:"2026-08-15",mkt:["ES"],name:"Asunción de la Virgen"},
+{date:"2026-08-31",mkt:["UK"],name:"Summer Bank Holiday"},
+{date:"2026-09-07",mkt:["BR","US"],name:"Independência · Labor Day"},
+{date:"2026-09-21",mkt:["JP"],name:"Keirō-no-Hi"},
+{date:"2026-09-23",mkt:["JP"],name:"Shūbun-no-Hi"},
+{date:"2026-10-12",mkt:["BR","US","JP","ES"],name:"N. Sra. Aparecida · Columbus Day · Supōtsu-no-Hi · Fiesta Nacional"},
+{date:"2026-11-01",mkt:["ES"],name:"Todos los Santos"},
+{date:"2026-11-02",mkt:["BR"],name:"Finados"},
+{date:"2026-11-03",mkt:["JP"],name:"Bunka-no-Hi"},
+{date:"2026-11-09",mkt:["ES"],name:"Almudena"},
+{date:"2026-11-11",mkt:["US"],name:"Veterans Day"},
+{date:"2026-11-15",mkt:["BR"],name:"Proclamação da República"},
+{date:"2026-11-20",mkt:["BR"],name:"Consciência Negra"},
+{date:"2026-11-23",mkt:["JP"],name:"Kinrō Kansha-no-Hi"},
+{date:"2026-11-26",mkt:["US"],name:"Thanksgiving"},
+{date:"2026-12-06",mkt:["ES"],name:"Día de la Constitución"},
+{date:"2026-12-08",mkt:["ES"],name:"Inmaculada Concepción"},
+{date:"2026-12-25",mkt:["BR","US","UK","ES"],name:"Natal · Christmas Day · Navidad"},
+{date:"2026-12-26",mkt:["UK"],name:"Boxing Day"},
+{date:"2027-01-01",mkt:["BR","US","JP","UK","ES"],name:"Confraternização Universal · New Year's Day · Ganjitsu · Año Nuevo"},
+{date:"2027-01-06",mkt:["ES"],name:"Reyes Magos"},
+{date:"2027-01-11",mkt:["JP"],name:"Seijin-no-Hi"},
+{date:"2027-01-18",mkt:["US"],name:"MLK Day"},
+{date:"2027-02-08",mkt:["BR"],name:"Carnaval (2ª-feira)"},
+{date:"2027-02-09",mkt:["BR"],name:"Carnaval (3ª-feira)"},
+{date:"2027-02-11",mkt:["JP"],name:"Kenkoku Kinen-no-Hi"},
+{date:"2027-02-15",mkt:["US"],name:"Presidents' Day"},
+{date:"2027-02-23",mkt:["JP"],name:"Tennō Tanjōbi"},
+{date:"2027-03-20",mkt:["JP"],name:"Shunbun-no-Hi"},
+{date:"2027-03-25",mkt:["ES"],name:"Jueves Santo"},
+{date:"2027-03-26",mkt:["BR","UK","ES"],name:"Sexta-Feira Santa · Good Friday · Viernes Santo"},
+{date:"2027-03-29",mkt:["UK"],name:"Easter Monday"},
+{date:"2027-04-21",mkt:["BR"],name:"Tiradentes"},
+{date:"2027-04-29",mkt:["JP"],name:"Shōwa-no-Hi"},
+{date:"2027-05-01",mkt:["BR","ES"],name:"Dia do Trabalho · Fiesta del Trabajo"},
+{date:"2027-05-02",mkt:["ES"],name:"Día Comunidad de Madrid"},
+{date:"2027-05-03",mkt:["JP","UK"],name:"Kenpō Kinenbi · Early May Bank Holiday"},
+{date:"2027-05-04",mkt:["JP"],name:"Midori-no-Hi"},
+{date:"2027-05-05",mkt:["JP"],name:"Kodomo-no-Hi"},
+{date:"2027-05-27",mkt:["BR"],name:"Corpus Christi"},
+{date:"2027-05-31",mkt:["US","UK"],name:"Memorial Day · Spring Bank Holiday"},
+{date:"2027-06-19",mkt:["US"],name:"Juneteenth"},
+{date:"2027-07-04",mkt:["US"],name:"Independence Day"},
+{date:"2027-07-19",mkt:["JP"],name:"Umi-no-Hi"},
+{date:"2027-07-25",mkt:["ES"],name:"Santiago Apóstol"},
+{date:"2027-08-11",mkt:["JP"],name:"Yama-no-Hi"},
+{date:"2027-08-15",mkt:["ES"],name:"Asunción de la Virgen"},
+{date:"2027-08-30",mkt:["UK"],name:"Summer Bank Holiday"},
+{date:"2027-09-06",mkt:["US"],name:"Labor Day"},
+{date:"2027-09-07",mkt:["BR"],name:"Independência"},
+{date:"2027-09-20",mkt:["JP"],name:"Keirō-no-Hi"},
+{date:"2027-09-23",mkt:["JP"],name:"Shūbun-no-Hi"},
+{date:"2027-10-11",mkt:["US","JP"],name:"Columbus Day · Supōtsu-no-Hi"},
+{date:"2027-10-12",mkt:["BR","ES"],name:"N. Sra. Aparecida · Fiesta Nacional"},
+{date:"2027-11-01",mkt:["ES"],name:"Todos los Santos"},
+{date:"2027-11-02",mkt:["BR"],name:"Finados"},
+{date:"2027-11-03",mkt:["JP"],name:"Bunka-no-Hi"},
+{date:"2027-11-09",mkt:["ES"],name:"Almudena"},
+{date:"2027-11-11",mkt:["US"],name:"Veterans Day"},
+{date:"2027-11-15",mkt:["BR"],name:"Proclamação da República"},
+{date:"2027-11-20",mkt:["BR"],name:"Consciência Negra"},
+{date:"2027-11-23",mkt:["JP"],name:"Kinrō Kansha-no-Hi"},
+{date:"2027-11-25",mkt:["US"],name:"Thanksgiving"},
+{date:"2027-12-06",mkt:["ES"],name:"Día de la Constitución"},
+{date:"2027-12-08",mkt:["ES"],name:"Inmaculada Concepción"},
+{date:"2027-12-25",mkt:["BR","US","UK","ES"],name:"Natal · Christmas Day · Navidad"},
+{date:"2027-12-26",mkt:["UK"],name:"Boxing Day"}
+];
+const FMAP = {}; FERIADOS.forEach(f => FMAP[f.date] = f);
+
+// ===== utilidades de data =====
+const SEM = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+const SEM3 = ["DOM","SEG","TER","QUA","QUI","SEX","SÁB"];
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const fimDeSemana = d => d.getDay()===0 || d.getDay()===6;
+const feriado = (d,m) => { const f=FMAP[iso(d)]; return f && f.mkt.includes(m); };
+const diaUtil = (d,m="BR") => !fimDeSemana(d) && !feriado(d,m);
+function addDias(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+// DU em (de, ate] no calendário BR
+function duEntre(de,ate){ let c=0,d=new Date(de); while(d<ate){ d=addDias(d,1); if(d<=ate && diaUtil(d)) c++; } return c; }
+function dcEntre(de,ate){ return Math.round((ate-de)/86400000); }
+function hojeZero(){ const h=new Date(); return new Date(h.getFullYear(),h.getMonth(),h.getDate()); }
+
+// ===== abas =====
+function aba(q){
+  ["cal","fx"].forEach(x=>{
+    document.getElementById("aba-"+x).classList.toggle("on",x===q);
+    document.getElementById("bt-"+x).classList.toggle("on",x===q);
+  });
+}
+
+// ===== ABA 1: folhinha =====
+function montaCalendario(){
+  const hoje = hojeZero();
+  const ano = hoje.getFullYear();
+  document.getElementById("hoje-label").textContent = SEM[hoje.getDay()]+", "+hoje.getDate()+" de "+MESES[hoje.getMonth()].toLowerCase()+" de "+ano;
+
+  // dia do ano / total e DU do ano
+  const iniAno = new Date(ano,0,0), fimAno = new Date(ano,11,31);
+  const diaAno = dcEntre(iniAno,hoje), totAno = dcEntre(iniAno,fimAno);
+  const duAno = duEntre(new Date(ano,0,0),hoje), duTotAno = duEntre(new Date(ano,0,0),fimAno);
+
+  document.getElementById("dia-grande").innerHTML =
+    '<div class="num">'+hoje.getDate()+'</div>'+
+    '<div class="sem">'+SEM3[hoje.getDay()]+'</div>'+
+    '<div class="frac">'+diaAno+'/'+totAno+'</div>'+
+    '<div class="mesano">'+MESES[hoje.getMonth()]+' '+ano+'</div>'+
+    '<div class="du-ano">'+duAno+'º dia útil de '+duTotAno+' no ano (BR)</div>';
+
+  // mês exibido começa no mês corrente, navegável entre jan/2026 e dez/2027
+  vista = Math.max(VMIN, Math.min(VMAX, ano*12 + hoje.getMonth()));
+  montaMes();
+}
+
+const VMIN = 2026*12, VMAX = 2027*12 + 11;
+let vista = VMIN;
+let base = hojeZero().getTime();   // data-base da contagem (clique num dia para mudar)
+function mudaMes(delta){ vista = Math.max(VMIN, Math.min(VMAX, vista + delta)); montaMes(); }
+function setBase(ts){ base = (ts===base) ? hojeZero().getTime() : ts; montaMes(); }
+
+function montaMes(){
+  const hoje = hojeZero();
+  const baseD = new Date(base);
+  const ehHojeBase = base===hoje.getTime();
+  const y = Math.floor(vista/12), m = vista%12;
+  document.getElementById("mes-titulo").textContent = (MESES[m]+" "+y).toUpperCase();
+  document.getElementById("bt-prev").disabled = vista<=VMIN;
+  document.getElementById("bt-next").disabled = vista>=VMAX;
+
+  // grade SEG-SEX do mês inteiro
+  const MERCADOS = ["BR","US","UK","ES"];
+  const ultDia = new Date(y,m+1,0).getDate();
+  let html="", linha=["","","","",""], temAlgo=false, feriadosMes=[];
+  const fecha = () => { if(temAlgo){ html+="<tr>"+linha.map(c=>c||"<td></td>").join("")+"</tr>"; } linha=["","","","",""]; temAlgo=false; };
+  for(let dia=1; dia<=ultDia; dia++){
+    const d = new Date(y,m,dia);
+    const w = d.getDay();
+    const f = FMAP[iso(d)];
+    if(f){ const mks=f.mkt.filter(mk=>MERCADOS.includes(mk)); if(mks.length) feriadosMes.push({d,f,mks}); }
+    if(w===0||w===6) continue;
+    if(w===1) fecha();
+    const ehBase = d.getTime()===base;
+    const ehHoje = d.getTime()===hoje.getTime();
+    const antes = d<baseD;
+    const ehFer = f && f.mkt.some(mk=>MERCADOS.includes(mk));
+    let cls = ehBase?"hoje":(ehFer?"fer":(antes?"passado":""));
+    if(ehHoje && !ehBase) cls += " hojeb";
+    const cont = ehBase ? '<div class="cont">'+(ehHojeBase?"HOJE":"BASE")+'</div>' :
+      antes ? '' :
+      '<div class="cont"><span class="du">'+duEntre(baseD,d)+'</span> <span class="dc">'+dcEntre(baseD,d)+'</span></div>';
+    const mkt = ehFer ? '<div class="mkt">'+f.mkt.filter(mk=>MERCADOS.includes(mk)).join("·")+'</div>' : "";
+    linha[w-1] = '<td class="'+cls+'" onclick="setBase('+d.getTime()+')"><div class="dnum">'+dia+'</div>'+cont+mkt+'</td>';
+    temAlgo=true;
+  }
+  fecha();
+  document.getElementById("mes-corpo").innerHTML = html;
+
+  document.getElementById("base-info").innerHTML = ehHojeBase ? "" :
+    "Contagem a partir de "+SEM3[baseD.getDay()]+" "+String(baseD.getDate()).padStart(2,"0")+"/"+String(baseD.getMonth()+1).padStart(2,"0")+"/"+baseD.getFullYear()+" — clique nesse dia de novo para voltar a HOJE "+
+    '<button class="bt-fx-envia" onclick="enviaParaFx()">Usar como Data Liq. na Cotação FX →</button>';
+
+  // feriados do mês (inclui os de fim de semana)
+  document.getElementById("fer-mes").innerHTML = feriadosMes.length ?
+    feriadosMes.map(x=>'<b>'+String(x.d.getDate()).padStart(2,"0")+' '+SEM3[x.d.getDay()]+'</b> ('+x.mks.join("·")+') — '+x.f.name).join("<br>") :
+    "Sem feriados bancários (BR·US·UK·ES) neste mês.";
+}
+
+// ===== ABA 2: cotação FX (conceitos da planilha) =====
+const N_OPS = 6;
+const fmt = (v,dec=4) => v.toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec});
+function salva(){
+  const ops=[];
+  for(let i=0;i<N_OPS;i++){
+    ops.push({
+      desc: val("desc"+i), data: val("data"+i), du: val("du"+i), dc: val("dc"+i),
+      linha: val("linha"+i), spread: val("spread"+i)
+    });
+  }
+  localStorage.setItem("redoma-fx", JSON.stringify({
+    spot:val("p-spot"), cdi:val("p-cdi"), linha:val("p-linha"), ops
+  }));
+}
+const val = id => { const e=document.getElementById(id); return e?e.value:""; };
+const num = id => parseFloat(val(id).toString().replace(",",".")) || 0;
+
+function montaFx(){
+  let html = '<tr class="spotrow"><td style="text-align:left">SPOT (D2D2 — referência)</td><td>—</td><td>2</td><td>2</td><td>—</td>'+
+    '<td class="calc" id="spot-ref"></td><td>—</td><td class="calc" id="spot-ref2"></td><td>0</td><td>0,00%</td></tr>';
+  for(let i=0;i<N_OPS;i++){
+    html += '<tr>'+
+      '<td><input id="desc'+i+'" style="text-align:left" placeholder="Operação '+(i+1)+'"></td>'+
+      '<td><input type="date" id="data'+i+'" onchange="dataMudou('+i+')"></td>'+
+      '<td><input id="du'+i+'" value="2" oninput="recalc()"></td>'+
+      '<td><input id="dc'+i+'" value="2" oninput="recalc()"></td>'+
+      '<td><input id="linha'+i+'" placeholder="auto" oninput="recalc()"></td>'+
+      '<td class="calc" id="justa'+i+'"></td>'+
+      '<td><input id="spread'+i+'" value="0" oninput="recalc()"></td>'+
+      '<td class="calc" id="cli'+i+'"></td>'+
+      '<td class="calc" id="dpips'+i+'"></td>'+
+      '<td class="calc" id="dpct'+i+'"></td></tr>';
+  }
+  document.getElementById("fx-corpo").innerHTML = html;
+  ["p-spot","p-cdi","p-linha"].forEach(id=>document.getElementById(id).addEventListener("input",recalc));
+  for(let i=0;i<N_OPS;i++) document.getElementById("desc"+i).addEventListener("input",salva);
+
+  // restaurar estado salvo
+  const s = localStorage.getItem("redoma-fx");
+  if(s){ try{
+    const j = JSON.parse(s);
+    if(j.spot) document.getElementById("p-spot").value=j.spot;
+    if(j.cdi) document.getElementById("p-cdi").value=j.cdi;
+    if(j.linha) document.getElementById("p-linha").value=j.linha;
+    (j.ops||[]).forEach((o,i)=>{
+      if(i>=N_OPS) return;
+      ["desc","data","du","dc","linha","spread"].forEach(k=>{
+        if(o[k]!==undefined && o[k]!=="") document.getElementById(k+i).value=o[k];
+      });
+    });
+  }catch(e){} }
+  recalc();
+}
+
+// envia a data-base do calendário para a primeira operação livre da aba FX
+function enviaParaFx(){
+  const baseD = new Date(base);
+  let alvo = 0;
+  for(let i=0;i<N_OPS;i++){ if(!val("data"+i) && !val("desc"+i)){ alvo=i; break; } if(i===N_OPS-1) alvo=0; }
+  document.getElementById("data"+alvo).value = iso(baseD);
+  dataMudou(alvo);
+  aba("fx");
+  document.getElementById("desc"+alvo).focus();
+}
+
+function dataMudou(i){
+  const v = val("data"+i);
+  if(!v) return;
+  const hoje = hojeZero();
+  const [y,m,d] = v.split("-").map(Number);
+  const liq = new Date(y,m-1,d);
+  document.getElementById("du"+i).value = duEntre(hoje,liq);
+  document.getElementById("dc"+i).value = dcEntre(hoje,liq);
+  recalc();
+}
+
+function taxaJusta(spot,cdi,du,linha,dc){
+  return spot * Math.pow(1+cdi/100,(du-2)/252) / (1+linha/100*(dc-2)/360);
+}
+
+function recalc(){
+  const spot=num("p-spot"), cdi=num("p-cdi"), linhaG=num("p-linha");
+  document.getElementById("spot-ref").textContent = fmt(spot);
+  document.getElementById("spot-ref2").textContent = fmt(spot);
+  for(let i=0;i<N_OPS;i++){
+    const du=num("du"+i), dc=num("dc"+i);
+    const linhaEl=document.getElementById("linha"+i);
+    const manual = linhaEl.value.trim()!=="";
+    const linha = manual ? num("linha"+i) : linhaG;
+    if(!manual) linhaEl.placeholder = fmt(linhaG,2);
+    // amarelo = input obrigatório: prazo > 7 DU ainda usando linha global
+    linhaEl.parentElement.classList.toggle("precisa", du>7 && !manual);
+    const justa = taxaJusta(spot,cdi,du,linha,dc);
+    const cli = justa + num("spread"+i)/10000;
+    const dp = (cli-spot)*10000, dpct=(cli-spot)/spot*100;
+    document.getElementById("justa"+i).textContent = fmt(justa);
+    document.getElementById("cli"+i).textContent = fmt(cli);
+    const elP=document.getElementById("dpips"+i), elC=document.getElementById("dpct"+i);
+    elP.textContent = fmt(dp,0); elC.textContent = fmt(dpct,2)+"%";
+    elP.className = "calc "+(dp<0?"neg":dp>0?"pos":""); elC.className = elP.className;
+  }
+  salva();
+}
+
+montaCalendario(); montaFx();
+</script>
+</body>
+</html>
